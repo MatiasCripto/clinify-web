@@ -1,0 +1,2002 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ClinifyAgent — Software de Gestión para Clínicas con IA y Bot WhatsApp</title>
+<meta name="description" content="Automatizá turnos por WhatsApp, gestioná tu clínica y mantené tu agenda siempre ocupada. Probado en Argentina. Desde $49 USD/mes." />
+<meta property="og:title" content="ClinifyAgent — Tu clínica trabaja sola" />
+<meta property="og:description" content="Bot de WhatsApp con IA, gestión de turnos, historia clínica y agenda inteligente para clínicas y consultorios privados." />
+<meta property="og:image" content="/images/og-image.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --black:    #080808;
+    --black2:   #0f0f0f;
+    --surface:  #141414;
+    --border:   #1e1e1e;
+    --amber:    #d97706;
+    --amber-l:  #f59e0b;
+    --amber-xl: #fde68a;
+    --white:    #f5f5f5;
+    --muted:    #6b6b6b;
+    --muted2:   #9a9a9a;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; scrollbar-width: thin; scrollbar-color: var(--amber) transparent; }
+  body {
+    background: var(--black);
+    color: var(--white);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+  ::selection { background: var(--amber); color: var(--black); }
+
+  /* ── Cursor ── */
+  #cursor {
+    width: 10px; height: 10px;
+    background: var(--amber-l);
+    border-radius: 50%;
+    position: fixed; top: 0; left: 0;
+    pointer-events: none; z-index: 9999;
+    transform: translate(-50%,-50%);
+    transition: transform 0.08s ease, width 0.25s, height 0.25s, opacity 0.25s;
+    mix-blend-mode: difference;
+  }
+  #cursor.hover { width: 36px; height: 36px; opacity: 0.6; }
+
+  /* ── Noise overlay ── */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none; z-index: 1; opacity: 0.4;
+  }
+
+  /* ── Nav ── */
+  nav {
+    position: sticky; top: 0; z-index: 100;
+    padding: 0 5%;
+    display: flex; align-items: center; justify-content: space-between;
+    height: 72px;
+    background: rgba(8,8,8,0.92);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--border);
+    transition: background 0.4s, border-bottom 0.4s;
+  }
+  .nav-logo {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 1.25rem;
+    letter-spacing: -0.02em;
+    color: var(--white);
+    text-decoration: none;
+  }
+  .nav-logo span { color: var(--amber-l); }
+  .nav-links { display: flex; gap: 2.5rem; list-style: none; }
+  .nav-links a {
+    color: var(--muted2); font-size: 0.875rem;
+    text-decoration: none; letter-spacing: 0.02em;
+    transition: color 0.2s;
+  }
+  .nav-links a:hover { color: var(--white); }
+  .nav-cta {
+    padding: 0.55rem 1.4rem;
+    background: var(--amber);
+    color: var(--black);
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 0.85rem;
+    letter-spacing: 0.03em;
+    text-decoration: none;
+    border-radius: 6px;
+    transition: background 0.2s, transform 0.15s;
+  }
+  .nav-cta:hover { background: var(--amber-l); }
+  .hamburger { display: none; flex-direction: column; gap: 5px; cursor: pointer; padding: 4px; }
+  .hamburger span { display: block; width: 24px; height: 2px; background: var(--white); transition: 0.3s; }
+  .mobile-menu {
+    display: none; position: fixed; inset: 0; top: 72px;
+    background: rgba(8,8,8,0.97); backdrop-filter: blur(20px);
+    flex-direction: column; align-items: center; justify-content: center;
+    gap: 2.5rem; z-index: 99;
+  }
+  .mobile-menu.open { display: flex; }
+  .mobile-menu a { color: var(--white); font-family: 'Syne', sans-serif; font-size: 1.5rem; font-weight: 700; text-decoration: none; }
+
+  /* ── Hero ── */
+  #hero {
+    min-height: 100dvh;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    text-align: center;
+    padding: 100px 5% 4rem;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero-bg {
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(ellipse 80% 60% at 20% 40%, rgba(217,119,6,0.12) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 50% at 80% 70%, rgba(245,158,11,0.07) 0%, transparent 55%),
+      radial-gradient(ellipse 100% 80% at 50% 0%, rgba(217,119,6,0.05) 0%, transparent 50%);
+    animation: bgPulse 12s ease-in-out infinite alternate;
+  }
+  @keyframes bgPulse {
+    0%   { opacity: 1; transform: scale(1); }
+    100% { opacity: 0.7; transform: scale(1.05); }
+  }
+  .hero-grid {
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.024) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.024) 1px, transparent 1px);
+    background-size: 60px 60px;
+    mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 30%, transparent 80%);
+  }
+  .hero-badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 6px 16px; border-radius: 100px;
+    border: 1px solid rgba(217,119,6,0.35);
+    background: rgba(217,119,6,0.08);
+    font-size: 0.78rem; letter-spacing: 0.08em;
+    color: var(--amber-l); text-transform: uppercase; font-weight: 500;
+    margin-bottom: 2rem; position: relative; z-index: 2;
+    opacity: 0; animation: fadeUp 0.8s 0.2s forwards;
+  }
+  .hero-badge::before {
+    content: ''; width: 6px; height: 6px;
+    background: var(--amber-l); border-radius: 50%;
+    animation: blink 2s ease-in-out infinite;
+  }
+  @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+  h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(2.8rem, 7vw, 5.5rem);
+    font-weight: 800;
+    line-height: 1.04;
+    letter-spacing: -0.03em;
+    position: relative; z-index: 2;
+    opacity: 0; animation: fadeUp 0.9s 0.4s forwards;
+  }
+  h1 .line-accent { color: var(--amber-l); display: block; }
+  .hero-sub {
+    max-width: 580px;
+    font-size: 1.1rem;
+    color: var(--muted2);
+    line-height: 1.7;
+    margin: 1.75rem auto 2.5rem;
+    position: relative; z-index: 2;
+    opacity: 0; animation: fadeUp 0.9s 0.6s forwards;
+  }
+  .hero-actions {
+    display: flex; gap: 1rem; align-items: center; justify-content: center; flex-wrap: wrap;
+    position: relative; z-index: 2;
+    opacity: 0; animation: fadeUp 0.9s 0.8s forwards;
+  }
+  .btn-primary {
+    padding: 0.9rem 2.2rem;
+    background: var(--amber);
+    color: var(--black);
+    font-family: 'Syne', sans-serif;
+    font-weight: 700; font-size: 0.95rem;
+    letter-spacing: 0.02em;
+    border: none; border-radius: 8px;
+    cursor: pointer; text-decoration: none;
+    transition: background 0.2s, box-shadow 0.2s;
+    position: relative; overflow: hidden;
+  }
+  .btn-primary::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.15), transparent);
+    pointer-events: none;
+  }
+  .btn-primary:hover { background: var(--amber-l); box-shadow: 0 0 32px rgba(245,158,11,0.35); }
+  .btn-ghost {
+    padding: 0.9rem 2.2rem;
+    background: transparent;
+    color: var(--muted2);
+    font-size: 0.9rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    cursor: pointer; text-decoration: none;
+    transition: color 0.2s, border-color 0.2s;
+  }
+  .btn-ghost:hover { color: var(--white); border-color: var(--muted); }
+  .hero-scroll-hint {
+    position: absolute; bottom: 2.5rem; left: 50%; transform: translateX(-50%);
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
+    color: var(--muted); font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase;
+    opacity: 0; animation: fadeUp 1s 1.4s forwards;
+  }
+  .scroll-line {
+    width: 1px; height: 48px;
+    background: linear-gradient(var(--amber), transparent);
+    animation: scrollAnim 2s ease-in-out infinite;
+  }
+  @keyframes scrollAnim { 0%,100% { transform: scaleY(1); opacity: 1; } 50% { transform: scaleY(0.5); opacity: 0.4; } }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── Sections common ── */
+  section { padding: 7rem 5%; position: relative; z-index: 2; }
+  .section-label {
+    font-size: 0.72rem; font-weight: 500;
+    letter-spacing: 0.15em; text-transform: uppercase;
+    color: var(--amber);
+    margin-bottom: 1rem;
+    display: block;
+  }
+  h2 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(2rem, 4vw, 3rem);
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -0.025em;
+  }
+  .section-header { max-width: 600px; margin-bottom: 4rem; }
+  .section-header p { color: var(--muted2); margin-top: 1rem; font-size: 1.05rem; line-height: 1.7; }
+  .centered { text-align: center; margin-left: auto; margin-right: auto; }
+
+  /* ── Stats ── */
+  #stats { background: var(--surface); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); padding: 5rem 5%; }
+  .stats-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 0; max-width: 960px; margin: 0 auto;
+  }
+  .stat-item {
+    text-align: center; padding: 2rem 1rem;
+    border-right: 1px solid var(--border);
+  }
+  .stat-item:last-child { border-right: none; }
+  .stat-num {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(2.5rem, 5vw, 3.5rem);
+    font-weight: 800; letter-spacing: -0.03em;
+    color: var(--amber-l);
+    line-height: 1;
+  }
+  .stat-unit { color: var(--amber); }
+  .stat-label { font-size: 0.85rem; color: var(--muted); margin-top: 0.5rem; letter-spacing: 0.03em; }
+
+  /* ── IA Section ── */
+  #ia { background: var(--black2); }
+  .ia-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 4rem; align-items: center; max-width: 1100px; margin: 0 auto;
+  }
+  .ia-visual {
+    border-radius: 16px; overflow: hidden;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    position: relative;
+  }
+  .ia-visual::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(135deg, rgba(217,119,6,0.12), transparent 50%);
+    pointer-events: none;
+    border-radius: 16px;
+  }
+  .ia-visual img { width: 100%; aspect-ratio: 4/3; object-fit: cover; display: block; }
+  .ia-pills { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 1.5rem; }
+  .ia-pill {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 0.5rem 1rem; border-radius: 100px;
+    border: 1px solid rgba(217,119,6,0.25);
+    background: rgba(217,119,6,0.06);
+    font-size: 0.8rem; color: var(--muted2);
+    transition: border-color 0.3s, background 0.3s;
+  }
+  .ia-pill:hover { border-color: var(--amber); background: rgba(217,119,6,0.1); }
+  .ia-pill .ia-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--amber-l); flex-shrink: 0;
+  }
+  .ia-benefits { display: flex; flex-direction: column; gap: 1rem; }
+  .ia-benefit {
+    display: flex; gap: 0.85rem; align-items: flex-start;
+    padding: 1rem; border-radius: 10px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    transition: border-color 0.3s;
+  }
+  .ia-benefit:hover { border-color: rgba(217,119,6,0.3); }
+  .ia-benefit-icon {
+    width: 34px; height: 34px; border-radius: 8px;
+    background: rgba(217,119,6,0.1);
+    border: 1px solid rgba(217,119,6,0.18);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; margin-top: 2px;
+  }
+  .ia-benefit strong {
+    display: block; font-size: 0.85rem; font-family: 'Syne', sans-serif;
+    font-weight: 700; color: var(--white); margin-bottom: 3px;
+  }
+  .ia-benefit span {
+    display: block; font-size: 0.8rem; color: var(--muted); line-height: 1.5;
+  }
+  @media (max-width: 900px) {
+    .ia-grid { grid-template-columns: 1fr; gap: 2.5rem; }
+  }
+
+  /* ── Features ── */
+  #features { background: var(--black); }
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    max-width: 1100px; margin: 0 auto;
+  }
+  .feature-card {
+    background: var(--black2);
+    padding: 2.5rem 2rem;
+    transition: background 0.3s;
+    position: relative; overflow: hidden;
+  }
+  .feature-card::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(circle at 0% 0%, rgba(217,119,6,0.07), transparent 60%);
+    opacity: 0; transition: opacity 0.4s;
+  }
+  .feature-card:hover { background: #161616; }
+  .feature-card:hover::before { opacity: 1; }
+  .feature-icon {
+    width: 44px; height: 44px; border-radius: 10px;
+    background: rgba(217,119,6,0.12); border: 1px solid rgba(217,119,6,0.2);
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 1.5rem;
+  }
+  .feature-icon svg { width: 20px; height: 20px; stroke: var(--amber-l); fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+  .feature-card h3 {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.05rem; font-weight: 700;
+    margin-bottom: 0.75rem; letter-spacing: -0.01em;
+  }
+  .feature-card p { font-size: 0.9rem; color: var(--muted); line-height: 1.65; }
+
+  /* ── Bento Grid ── */
+  #how { background: var(--black2); }
+  .bento-grid {
+    display: grid; grid-template-columns: 2fr 1fr;
+    gap: 1.25rem; max-width: 1100px; margin: 3rem auto 0;
+  }
+  .bento-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 16px; padding: 2rem; position: relative; overflow: hidden;
+    transition: border-color 0.3s;
+  }
+  .bento-card:hover { border-color: rgba(217,119,6,0.35); }
+  .bento-card h3 { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 1.05rem; margin: 1.25rem 0 0.5rem; }
+  .bento-card > p { font-size: 0.85rem; color: var(--muted); line-height: 1.6; }
+  .bento-card-a { min-height: 340px; }
+  .bento-card-b { min-height: 280px; }
+  .bento-card-c { min-height: 280px; }
+  .bento-card-d { min-height: 280px; }
+
+  /* Card A: WhatsApp chat */
+  .chat-sim {
+    background: #0B141A; border-radius: 12px; overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.06);
+  }
+  .chat-sim-header {
+    display: flex; align-items: center; gap: 10px; padding: 0.75rem 1rem;
+    background: #1F2C34; border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+  .chat-sim-avatar {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: var(--amber); color: #fff; display: flex; align-items: center; justify-content: center;
+    font-family: 'Syne', sans-serif; font-weight: 800; font-size: 0.8rem; flex-shrink: 0;
+  }
+  .chat-sim-header strong { font-size: 0.8rem; color: #e9edef; display: block; font-family: 'Syne', sans-serif; }
+  .chat-sim-status { font-size: 0.68rem; color: #8696a0; }
+  .dot-live { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #25d366; animation: dotPulse 2s ease-in-out infinite; }
+  @keyframes dotPulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+  .chat-sim-body {
+    padding: 1rem; display: flex; flex-direction: column; gap: 0.6rem; min-height: 220px;
+    font-size: 0.78rem; font-family: -apple-system, system-ui, sans-serif;
+  }
+  .chat-bubble {
+    max-width: 82%; padding: 0.5rem 0.75rem; border-radius: 8px; line-height: 1.45;
+    opacity: 0; transform: translateY(10px); transition: opacity 0.3s, transform 0.3s;
+  }
+  .chat-bubble.show { opacity: 1; transform: translateY(0); }
+  .chat-bubble.in {
+    background: #005C4B; color: #e9edef; align-self: flex-end;
+    border-radius: 8px 4px 8px 8px;
+  }
+  .chat-bubble.out {
+    background: #1F2C34; color: #e9edef; align-self: flex-start;
+    border-radius: 4px 8px 8px 8px; display: flex; gap: 8px;
+  }
+  .chat-bubble.out::before {
+    content: 'C'; width: 18px; height: 18px; border-radius: 50%; flex-shrink: 0;
+    background: var(--amber); color: #fff; font-size: 0.6rem; font-weight: 800;
+    display: flex; align-items: center; justify-content: center; font-family: 'Syne', sans-serif;
+  }
+  .chat-typing { display: flex; gap: 4px; padding: 0.5rem 0.75rem; align-self: flex-start; }
+  .chat-typing span { width: 6px; height: 6px; border-radius: 50%; background: #8696a0; animation: typeBounce 1.4s ease-in-out infinite; }
+  .chat-typing span:nth-child(2) { animation-delay: 0.2s; }
+  .chat-typing span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes typeBounce { 0%,60%,100% { transform: translateY(0); } 30% { transform: translateY(-5px); } }
+
+  /* Card B: Mini Agenda */
+  .agenda-mini {
+    width: 100%; background: rgba(255,255,255,0.03); border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.06); overflow: hidden;
+  }
+  .agenda-mini-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0.65rem 0.85rem; background: rgba(255,255,255,0.03);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .agenda-day { font-size: 0.72rem; font-weight: 600; color: var(--amber-l); font-family: 'Syne', sans-serif; }
+  .agenda-count { font-size: 0.62rem; color: var(--muted); background: rgba(255,255,255,0.05); padding: 2px 8px; border-radius: 100px; }
+  .agenda-rows { display: flex; flex-direction: column; }
+  .agenda-row {
+    display: flex; align-items: center; gap: 8px; padding: 0.5rem 0.85rem;
+    border-bottom: 1px solid rgba(255,255,255,0.03); transition: background 0.3s;
+  }
+  .agenda-row:last-child { border-bottom: none; }
+  .agenda-row.new {
+    background: rgba(16,185,129,0.1); animation: rowFlash 2s ease-out forwards;
+  }
+  @keyframes rowFlash {
+    0% { background: rgba(16,185,129,0.25); }
+    100% { background: transparent; }
+  }
+  .agenda-time {
+    font-size: 0.68rem; font-weight: 700; color: var(--amber-l); min-width: 35px;
+    font-family: 'Syne', sans-serif; tabular-nums: lining-nums;
+  }
+  .agenda-bar { width: 2.5px; height: 24px; border-radius: 100px; flex-shrink: 0; }
+  .agenda-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+  .agenda-patient { font-size: 0.68rem; font-weight: 600; color: var(--white); truncate: ellipsis; white-space: nowrap; overflow: hidden; }
+  .agenda-pro { font-size: 0.6rem; color: var(--muted); white-space: nowrap; overflow: hidden; }
+  .agenda-status {
+    font-size: 0.58rem; padding: 2px 7px; border-radius: 100px; font-weight: 600;
+    flex-shrink: 0; letter-spacing: 0.02em;
+  }
+  .agenda-status.done { background: rgba(16,185,129,0.15); color: #10b981; }
+  .agenda-status.pending { background: rgba(245,158,11,0.15); color: var(--amber-l); }
+
+  /* Card C: Mini Calendar */
+  .mini-cal {
+    width: 100%; background: rgba(255,255,255,0.03); border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.06); overflow: hidden; padding: 0.65rem;
+  }
+  .mini-cal-header {
+    display: flex; align-items: center; justify-content: center; margin-bottom: 0.35rem;
+  }
+  .mini-cal-month { font-family: 'Syne', sans-serif; font-size: 0.72rem; font-weight: 700; color: var(--amber-l); }
+  .mini-cal-dow {
+    display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; text-align: center;
+    margin-bottom: 2px;
+  }
+  .mini-cal-dow span {
+    font-size: 0.5rem; font-weight: 600; color: var(--muted); text-transform: uppercase;
+    padding: 2px 0;
+  }
+  .mini-cal-dow span.active { color: var(--amber); }
+  .mini-cal-grid {
+    display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px;
+  }
+  .mini-cal-grid > span {
+    font-size: 0.58rem; color: var(--muted2); text-align: center;
+    padding: 3px 0; border-radius: 4px; position: relative; min-height: 22px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+  }
+  .cal-day { cursor: default; }
+  .cal-day.active-day {
+    background: rgba(217,119,6,0.15); color: var(--amber-l); font-weight: 700;
+    border: 1px solid rgba(217,119,6,0.3); border-radius: 6px;
+  }
+  .cal-dot {
+    width: 4px; height: 4px; border-radius: 50%; display: inline-block;
+    margin-top: 1px; flex-shrink: 0;
+  }
+  .cal-day.has-dot { position: relative; }
+  .cal-dot.new-dot {
+    width: 5px; height: 5px; background: #10b981; opacity: 0; transform: scale(0);
+    transition: none;
+  }
+  .cal-dot.new-dot.stamped {
+    animation: dotStamp 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  }
+  @keyframes dotStamp {
+    0% { opacity: 0; transform: scale(0); }
+    60% { opacity: 1; transform: scale(2.2); }
+    100% { opacity: 1; transform: scale(1); }
+  }
+  .mini-cal-legend {
+    text-align: center; margin-top: 0.5rem; padding-top: 0.4rem;
+    border-top: 1px solid rgba(255,255,255,0.05);
+    font-size: 0.55rem; color: var(--muted); opacity: 0;
+    transition: opacity 0.5s;
+  }
+  .mini-cal-legend.show { opacity: 1; }
+  @keyframes legendFlash {
+    0% { color: var(--muted); }
+    50% { color: #10b981; }
+    100% { color: var(--muted); }
+  }
+
+  /* Card D: Timeline */
+  .timeline {
+    display: flex; align-items: flex-start; justify-content: center; gap: 0;
+    padding: 1.5rem 0; flex-wrap: wrap;
+  }
+  .tl-node {
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+    opacity: 0; animation: tlReveal 5s ease-in-out infinite;
+    animation-delay: calc(var(--i,0) * 0.4s);
+  }
+  .tl-icon {
+    width: 40px; height: 40px; border-radius: 50%;
+    background: var(--surface); border: 2px solid #25d366;
+    display: flex; align-items: center; justify-content: center; font-size: 1rem;
+  }
+  .tl-icon.tl-wa { border-color: #25d366; }
+  .tl-icon.tl-star { border-color: var(--amber); }
+  .tl-node span { font-size: 0.65rem; color: var(--muted); text-align: center; white-space: nowrap; }
+  .tl-line {
+    width: 32px; height: 2px; background: var(--border); align-self: center; margin: 0 4px;
+    transform-origin: left; animation: lineGrow 5s ease-in-out infinite;
+    animation-delay: calc(var(--i,0) * 0.4s);
+  }
+  @keyframes tlReveal { 0%,10% { opacity: 0; transform: scale(0.7); } 25%,100% { opacity: 1; transform: scale(1); } }
+  @keyframes lineGrow { 0%,15% { transform: scaleX(0); } 30%,100% { transform: scaleX(1); } }
+
+  /* Responsive bento */
+  @media (max-width: 1024px) {
+    .bento-grid { grid-template-columns: 1fr 1fr; }
+    .bento-card-a { grid-column: 1 / -1; }
+    .bento-card-d { grid-column: 1 / -1; }
+    .timeline { flex-wrap: wrap; justify-content: center; gap: 0.5rem; }
+    .tl-line { width: 20px; }
+  }
+  @media (max-width: 640px) {
+    .bento-grid { grid-template-columns: 1fr; }
+    .bento-card-a, .bento-card-c, .bento-card-d { min-height: 260px; } .bento-card-b { min-height: 260px; }
+    .timeline { flex-direction: column; align-items: center; }
+    .tl-line { width: 2px; height: 20px; }
+  }
+
+  /* Reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    .bento-card * { animation: none !important; transition: none !important; }
+  }
+
+  /* ── Pricing ── */
+  #pricing { background: var(--black); }
+  .pricing-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem; max-width: 1000px; margin: 0 auto;
+    align-items: stretch;
+  }
+  .plan-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 16px; padding: 2.5rem 2rem;
+    position: relative;
+    transition: border-color 0.3s, transform 0.3s;
+    display: flex; flex-direction: column;
+  }
+  .plan-card .btn-plan { margin-top: auto; }
+  .plan-card:hover { border-color: var(--muted); transform: translateY(-4px); }
+  .plan-card.featured {
+    border-color: var(--amber);
+    background: linear-gradient(160deg, rgba(217,119,6,0.06), var(--surface));
+  }
+  .plan-card.featured:hover { border-color: var(--amber-l); box-shadow: 0 0 40px rgba(217,119,6,0.12); }
+  .plan-badge-popular {
+    position: absolute; top: 1.5rem; right: 1.5rem;
+    padding: 3px 12px; border-radius: 100px;
+    background: var(--amber); color: var(--black);
+    font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.7rem;
+    letter-spacing: 0.06em; text-transform: uppercase;
+  }
+  .plan-name {
+    font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.85rem;
+    letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted);
+    margin-bottom: 1.25rem; min-height: 1rem; display: flex; align-items: center;
+  }
+  .plan-price {
+    font-family: 'Syne', sans-serif; font-weight: 800;
+    font-size: 2.8rem; letter-spacing: -0.04em;
+    line-height: 1; margin-bottom: 0.3rem;
+    min-height: 2.8rem; display: flex; align-items: center;
+  }
+  .plan-price .currency { font-size: 1.2rem; vertical-align: top; margin-top: 0.5rem; display: inline-block; color: var(--muted2); }
+  .plan-period { font-size: 0.8rem; color: var(--muted); margin-bottom: 2rem; min-height: 2.6rem; display: flex; align-items: center; }
+  .plan-divider { height: 1px; background: var(--border); margin-bottom: 1.75rem; }
+  .plan-features { list-style: none; display: flex; flex-direction: column; gap: 0.75rem; flex: 1; }
+  .plan-features li { font-size: 0.875rem; color: var(--muted2); display: flex; align-items: center; gap: 10px; min-height: 1.5rem; }
+  .plan-features li::before {
+    content: ''; width: 16px; height: 16px; flex-shrink: 0;
+    background: url("data:image/svg+xml,%3Csvg viewBox='0 0 16 16' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M3 8l3.5 3.5L13 4' stroke='%23d97706' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/contain no-repeat;
+  }
+  .plan-features li.dim { color: var(--muted); }
+  .plan-features li.dim::before {
+    opacity: 0.25; filter: grayscale(1);
+  }
+  .plan-support, .plan-onboarding {
+    font-size: 0.72rem; color: var(--muted); margin-top: 1rem;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .plan-support::before {
+    content: ''; width: 5px; height: 5px; border-radius: 50%; background: var(--amber);
+    flex-shrink: 0;
+  }
+  .plan-onboarding { margin-top: 0.35rem; }
+  .plan-onboarding::before {
+    content: ''; width: 5px; height: 5px; border-radius: 50%; background: var(--border);
+    flex-shrink: 0;
+  }
+  .plan-badge-popular {
+    background: var(--amber); color: #fff; padding: 4px 14px;
+    border-radius: 100px; font-family: 'Syne', sans-serif;
+    font-weight: 700; font-size: 0.72rem; letter-spacing: 0.06em;
+    text-transform: uppercase; box-shadow: 0 0 16px rgba(245,158,11,0.35);
+  }
+  .plan-card-wrapper {
+    position: relative; display: flex; flex-direction: column;
+  }
+  .plan-card-wrapper .plan-badge {
+    position: absolute; top: -16px; left: 50%; transform: translateX(-50%);
+    z-index: 10; white-space: nowrap;
+  }
+  .plan-card-wrapper .plan-card { flex: 1; }
+  .btn-plan {
+    display: block; width: 100%; text-align: center;
+    padding: 0.85rem; border-radius: 8px;
+    font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.9rem;
+    letter-spacing: 0.02em; text-decoration: none;
+    transition: 0.2s;
+  }
+  .btn-plan.outline { border: 1px solid var(--border); color: var(--muted2); }
+  .btn-plan.outline:hover { border-color: var(--muted); color: var(--white); }
+  .btn-plan.fill { background: var(--amber); color: var(--black); }
+  .btn-plan.fill:hover { background: var(--amber-l); box-shadow: 0 0 24px rgba(245,158,11,0.3); }
+
+  /* ── About / Contact ── */
+  #contact { background: var(--black2); }
+  .contact-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5rem; align-items: start; max-width: 1100px; margin: 0 auto; }
+  .contact-info p { font-size: 0.95rem; color: var(--muted2); line-height: 1.75; margin-bottom: 2.5rem; }
+  .creator-card {
+    display: flex; align-items: center; gap: 1.25rem;
+    padding: 1.5rem; background: var(--surface);
+    border: 1px solid var(--border); border-radius: 12px;
+    margin-bottom: 1.5rem;
+  }
+  .creator-avatar {
+    width: 52px; height: 52px; border-radius: 50%;
+    background: rgba(217,119,6,0.12); border: 2px solid rgba(217,119,6,0.3);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.1rem; color: var(--amber-l);
+    flex-shrink: 0;
+  }
+  .creator-name { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 1rem; }
+  .creator-role { font-size: 0.8rem; color: var(--muted); margin-top: 2px; }
+  .creator-email {
+    font-size: 0.8rem; color: var(--amber);
+    text-decoration: none; display: block; margin-top: 4px;
+  }
+  .contact-form { display: flex; flex-direction: column; gap: 1rem; }
+  .form-group { display: flex; flex-direction: column; gap: 0.4rem; }
+  .form-group label { font-size: 0.8rem; color: var(--muted); letter-spacing: 0.04em; }
+  .form-group input,
+  .form-group textarea {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; padding: 0.8rem 1rem;
+    color: var(--white); font-family: 'DM Sans', sans-serif; font-size: 0.9rem;
+    outline: none; transition: border-color 0.2s;
+    resize: none;
+  }
+  .form-group input:focus,
+  .form-group textarea:focus { border-color: var(--amber); }
+  .form-group textarea { min-height: 120px; }
+  .btn-submit {
+    padding: 0.9rem; background: var(--amber); color: var(--black);
+    border: none; border-radius: 8px; cursor: pointer;
+    font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.95rem;
+    letter-spacing: 0.02em; transition: background 0.2s, box-shadow 0.2s;
+  }
+  .btn-submit:hover { background: var(--amber-l); box-shadow: 0 0 24px rgba(245,158,11,0.25); }
+  .btn-whatsapp {
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    width: 100%; padding: 1rem; border-radius: 10px;
+    background: #25D366; color: #fff;
+    font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.95rem;
+    text-decoration: none; letter-spacing: 0.02em;
+    transition: background 0.2s, box-shadow 0.2s;
+  }
+  .btn-whatsapp:hover { background: #20b858; box-shadow: 0 0 24px rgba(37,211,102,0.3); }
+  .form-separator {
+    text-align: center; margin: 1.5rem 0 1rem;
+    font-size: 0.78rem; color: var(--muted); letter-spacing: 0.04em;
+  }
+  footer {
+    padding: 4rem 5% 3rem;
+    border-top: 1px solid var(--border);
+  }
+  .footer-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 2.5rem; max-width: 1100px; margin: 0 auto;
+  }
+  .footer-col { display: flex; flex-direction: column; }
+  .footer-heading {
+    font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.78rem;
+    color: var(--white); letter-spacing: 0.06em; text-transform: uppercase;
+    margin-bottom: 1rem;
+  }
+  .footer-logo { font-family: 'Syne', sans-serif; font-weight: 800; color: var(--white); }
+  .footer-logo span { color: var(--amber-l); }
+  footer p { font-size: 0.8rem; color: var(--muted); }
+  .footer-links { display: flex; flex-direction: column; gap: 0.6rem; list-style: none; }
+  .footer-links a { font-size: 0.8rem; color: var(--muted); text-decoration: none; transition: color 0.2s; }
+  .footer-links a:hover { color: var(--white); }
+  @media (max-width: 768px) { .footer-grid { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 480px) { .footer-grid { grid-template-columns: 1fr; } }
+
+  /* ── Hero mockup ── */
+  .hero-mockup {
+    position: relative; z-index: 2;
+    margin-top: 3.5rem;
+    max-width: 900px; width: 100%;
+  }
+  .hero-mockup img {
+    width: 100%; border-radius: 16px; display: block;
+    box-shadow: 0 40px 120px rgba(0,0,0,0.65), 0 0 0 1px rgba(255,255,255,0.06);
+  }
+  .hero-mockup::before {
+    content: '';
+    position: absolute; inset: -1px;
+    border-radius: 17px;
+    background: linear-gradient(135deg, rgba(217,119,6,0.25), transparent 50%);
+    z-index: -1;
+  }
+
+  /* ── Screenshots ── */
+  #screenshots { background: var(--black2); }
+  .screenshots-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem; max-width: 1100px; margin: 0 auto;
+  }
+  .screenshot-item {
+    border-radius: 14px; overflow: hidden;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    transition: transform 0.3s, border-color 0.3s;
+  }
+  .screenshot-item:hover { transform: translateY(-5px); border-color: rgba(217,119,6,0.4); }
+  .screenshot-item img { width: 100%; aspect-ratio: 4/3; object-fit: cover; display: block; }
+  .screenshot-caption { padding: 1.25rem 1.5rem; }
+  .screenshot-caption h4 {
+    font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.95rem;
+    margin-bottom: 0.4rem;
+  }
+  .screenshot-caption p { font-size: 0.82rem; color: var(--muted); line-height: 1.6; }
+
+  /* ── Trust section ── */
+  #trust { background: var(--black); }
+  .trust-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 5rem; align-items: center; max-width: 1100px; margin: 0 auto;
+  }
+  .trust-img {
+    border-radius: 16px; overflow: hidden;
+    border: 1px solid var(--border); position: relative;
+  }
+  .trust-img img { width: 100%; display: block; aspect-ratio: 4/3; object-fit: cover; }
+  .trust-img::after {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(135deg, rgba(217,119,6,0.1), transparent 60%);
+    pointer-events: none;
+  }
+  .trust-content h2 { margin-bottom: 1.5rem; }
+  .trust-content p { font-size: 0.95rem; color: var(--muted2); line-height: 1.75; margin-bottom: 1.25rem; }
+  .trust-tags { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 0.5rem; }
+  .trust-tag {
+    padding: 0.4rem 1rem; border-radius: 100px;
+    border: 1px solid var(--border);
+    font-size: 0.8rem; color: var(--muted2);
+    transition: border-color 0.2s, color 0.2s;
+  }
+  .trust-tag:hover { border-color: var(--amber); color: var(--amber-l); }
+
+  /* ── Contact reception ── */
+  .contact-reception {
+    border-radius: 12px; overflow: hidden;
+    border: 1px solid var(--border); margin-top: 2rem;
+  }
+  .contact-reception img { width: 100%; display: block; aspect-ratio: 16/9; object-fit: cover; }
+
+  /* ── Testimonials ── */
+  .testimonials-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem; max-width: 1100px; margin: 0 auto;
+  }
+  .testimonial-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 14px; padding: 2rem;
+    display: flex; flex-direction: column; gap: 1rem;
+    transition: border-color 0.3s, transform 0.3s;
+  }
+  .testimonial-card:hover { border-color: var(--amber); transform: translateY(-4px); }
+  .testimonial-avatar {
+    width: 48px; height: 48px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1rem;
+    color: var(--white);
+  }
+  .testimonial-stars { color: var(--amber-l); font-size: 0.9rem; letter-spacing: 2px; }
+  .testimonial-text {
+    font-size: 0.9rem; font-style: italic; color: var(--muted2); line-height: 1.7;
+    flex: 1;
+  }
+  .testimonial-author strong { display: block; font-family: 'Syne', sans-serif; font-size: 0.9rem; font-weight: 700; color: var(--white); }
+  .testimonial-author span { font-size: 0.78rem; color: var(--muted); }
+  @media (max-width: 900px) { .testimonials-grid { grid-template-columns: 1fr; max-width: 480px; } }
+
+  /* ── FAQ ── */
+  #faq { background: var(--black2); }
+  .faq-list { max-width: 750px; margin: 0 auto; display: flex; flex-direction: column; gap: 0.75rem; }
+  .faq-item { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; transition: border-color 0.3s; }
+  .faq-item:hover { border-color: rgba(217,119,6,0.3); }
+  .faq-question {
+    width: 100%; padding: 1.25rem 1.5rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+    background: none; border: none; cursor: pointer;
+    font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.95rem; color: var(--white); text-align: left;
+  }
+  .faq-chevron { flex-shrink: 0; transition: transform 0.3s ease; }
+  .faq-item.open .faq-chevron { transform: rotate(180deg); }
+  .faq-answer { max-height: 0; overflow: hidden; transition: max-height 0.35s ease, padding 0.35s ease; padding: 0 1.5rem; }
+  .faq-item.open .faq-answer { max-height: 300px; padding: 0 1.5rem 1.25rem; }
+  .faq-answer p { font-size: 0.9rem; color: var(--muted); line-height: 1.7; }
+
+  /* ── Reveal animations ── */
+  .reveal { opacity: 0; transform: translateY(28px); transition: opacity 0.7s ease-out, transform 0.7s ease-out; }
+  .reveal.visible { opacity: 1; transform: translateY(0); }
+  .reveal-scale { opacity: 0; transform: scale(0.94); transition: opacity 0.6s, transform 0.6s; }
+  .reveal-scale.visible { opacity: 1; transform: scale(1); }
+
+  /* ── Video Modal ── */
+  .video-modal {
+    display: none; position: fixed; inset: 0; z-index: 9999;
+    background: rgba(0,0,0,0.85); backdrop-filter: blur(8px);
+    align-items: center; justify-content: center;
+  }
+  .video-modal.open { display: flex; }
+  .video-modal-container {
+    position: relative; width: 90%; max-width: 800px;
+    background: var(--black); border: 1px solid var(--border);
+    border-radius: 16px; overflow: hidden;
+    animation: modalIn 0.3s ease-out;
+  }
+  @keyframes modalIn { from { opacity: 0; transform: scale(0.95) translateY(20px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+  .video-modal-close {
+    position: absolute; top: 12px; right: 12px; z-index: 10;
+    width: 36px; height: 36px; border-radius: 50%;
+    background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15);
+    color: var(--white); font-size: 1.1rem; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.2s;
+  }
+  .video-modal-close:hover { background: rgba(255,255,255,0.2); }
+  .video-modal-iframe { width: 100%; aspect-ratio: 16/9; border: none; display: block; }
+  .video-btn { cursor: pointer; }
+
+  /* ── Responsive ── */
+  @media (max-width: 900px) {
+    .features-grid { grid-template-columns: 1fr 1fr; }
+    .pricing-grid { grid-template-columns: 1fr; max-width: 400px; }
+    .how-grid { grid-template-columns: 1fr; }
+    .contact-grid { grid-template-columns: 1fr; }
+    .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    .stat-item:nth-child(2) { border-right: none; }
+    .stat-item:nth-child(3) { border-top: 1px solid var(--border); }
+    .stat-item:nth-child(4) { border-top: 1px solid var(--border); border-right: none; }
+    .screenshots-grid { grid-template-columns: 1fr; max-width: 480px; }
+    .trust-grid { grid-template-columns: 1fr; gap: 2.5rem; }
+  }
+  @media (max-width: 640px) {
+    .nav-links { display: none; }
+    .nav-cta { display: none; }
+    .hamburger { display: flex; }
+    .features-grid { grid-template-columns: 1fr; }
+    .stats-grid { grid-template-columns: 1fr 1fr; }
+    #cursor { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Cursor -->
+<div id="cursor"></div>
+
+<!-- Nav -->
+<nav id="nav">
+  <a href="#" class="nav-logo">Clinify<span>Agent</span></a>
+  <ul class="nav-links">
+    <li><a href="#how">Como funciona</a></li>
+    <li><a href="#features">Funcionalidades</a></li>
+    <li><a href="#testimonials">Testimonios</a></li>
+    <li><a href="#pricing">Planes</a></li>
+    <li><a href="#faq">FAQ</a></li>
+    <li><a href="#contact">Contacto</a></li>
+  </ul>
+  <a href="#contact" class="nav-cta cta-btn">Solicitar acceso</a>
+  <div class="hamburger" id="hamburger">
+    <span></span><span></span><span></span>
+  </div>
+</nav>
+
+  <div class="mobile-menu" id="mobileMenu">
+  <a href="#how" onclick="closeMobile()">Como funciona</a>
+  <a href="#features" onclick="closeMobile()">Funcionalidades</a>
+  <a href="#testimonials" onclick="closeMobile()">Testimonios</a>
+  <a href="#pricing" onclick="closeMobile()">Planes</a>
+  <a href="#faq" onclick="closeMobile()">FAQ</a>
+  <a href="#contact" onclick="closeMobile()">Contacto</a>
+  <a href="#contact" class="btn-primary cta-btn" onclick="closeMobile()">Solicitar acceso</a>
+</div>
+
+<!-- Hero -->
+<section id="hero">
+  <canvas id="particles-canvas" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0;"></canvas>
+  <div class="hero-bg"></div>
+  <div class="hero-grid"></div>
+  <div class="hero-badge">Software de gestión con IA para clínicas y consultorios</div>
+  <h1>
+    Tu clinica trabaja sola.
+    <span class="line-accent">Vos tomas las decisiones.</span>
+  </h1>
+  <p class="hero-sub">
+    ClinifyAgent automatiza el agendamiento de turnos via WhatsApp,
+    centraliza la historia clínica y mantiene tu agenda ocupada —
+    todo desde una unica plataforma.
+    <br>Impulsado por inteligencia artificial que aprende de cada interaccion.
+  </p>
+  <div class="hero-actions">
+    <a href="#contact" class="btn-primary cta-btn">Quiero mi demo gratuita</a>
+    <a href="#how" class="btn-ghost">Ver cómo funciona</a>
+  </div>
+  <div class="hero-mockup" style="opacity:0;animation:fadeUp 1s 1s forwards;">
+    <img src="images/hero-devices.png" alt="ClinifyAgent — Dashboard de gestión en laptop y tablet">
+  </div>
+</section>
+
+<!-- Stats -->
+<section id="stats">
+  <div class="stats-grid">
+    <div class="stat-item reveal">
+      <div class="stat-num"><span class="counter" data-target="500">0</span><span class="stat-unit">+</span></div>
+      <div class="stat-label">Turnos automatizados por mes</div>
+    </div>
+    <div class="stat-item reveal" style="transition-delay:0.1s">
+      <div class="stat-num"><span class="counter" data-target="24">0</span><span class="stat-unit">hs</span></div>
+      <div class="stat-label">Atencion continua sin personal</div>
+    </div>
+    <div class="stat-item reveal" style="transition-delay:0.2s">
+      <div class="stat-num"><span class="counter" data-target="3">0</span><span class="stat-unit">min</span></div>
+      <div class="stat-label">Para configurar el bot</div>
+    </div>
+    <div class="stat-item reveal" style="transition-delay:0.3s">
+      <div class="stat-num"><span class="counter" data-target="0">0</span><span class="stat-unit">$</span></div>
+      <div class="stat-label">Sin costos ocultos</div>
+    </div>
+  </div>
+</section>
+</section>
+
+<!-- IA Section -->
+<section id="ia">
+  <div class="ia-grid">
+    <div class="reveal">
+      <span class="section-label">Agente Inteligente</span>
+      <h2>ClinifyAgent: tu clínica siempre disponible</h2>
+      <p style="font-size:1.1rem;color:var(--muted2);line-height:1.75;margin:1.25rem 0;">
+        Un agente inteligente que trabaja junto a tu equipo. Atiende consultas por WhatsApp,
+        agenda turnos en tiempo real y los registra en el dashboard — para que vos y tu equipo
+        se enfoquen en lo que importa: los pacientes.
+      </p>
+      <div class="ia-benefits">
+        <div class="ia-benefit">
+          <div class="ia-benefit-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          </div>
+          <div>
+            <strong>Agenda, cancela y reprograma turnos</strong>
+            <span>Sin intervención humana. El paciente elige día, hora y profesional directamente desde WhatsApp.</span>
+          </div>
+        </div>
+        <div class="ia-benefit">
+          <div class="ia-benefit-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          </div>
+          <div>
+            <strong>Consulta disponibilidad real</strong>
+            <span>Por profesional, área y horario. El agente sabe exactamente qué slots están libres antes de ofrecerle al paciente.</span>
+          </div>
+        </div>
+        <div class="ia-benefit">
+          <div class="ia-benefit-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          </div>
+          <div>
+            <strong>Pide nombre y DNI al paciente</strong>
+            <span>Identifica a cada paciente antes de confirmar. Si es nuevo, lo registra automáticamente en la base.</span>
+          </div>
+        </div>
+        <div class="ia-benefit">
+          <div class="ia-benefit-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          </div>
+          <div>
+            <strong>Habla en argentino, cercano y natural</strong>
+            <span>El paciente siente que habla con una persona, no con un robot. El tono se adapta a tu clínica.</span>
+          </div>
+        </div>
+        <div class="ia-benefit">
+          <div class="ia-benefit-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          </div>
+          <div>
+            <strong>Si necesita ayuda humana, deriva con contexto</strong>
+            <span>Cuando el caso lo requiere, transfiere la conversación a un miembro del equipo con todo el historial del chat.</span>
+          </div>
+        </div>
+        <div class="ia-benefit">
+          <div class="ia-benefit-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          </div>
+          <div>
+            <strong>Todo queda registrado en el dashboard</strong>
+            <span>Turnos, pacientes nuevos, cambios y cancelaciones. El equipo ve en tiempo real lo que el agente resuelve.</span>
+          </div>
+        </div>
+      </div>
+      <p style="font-size:0.95rem;color:var(--amber-l);line-height:1.6;margin-top:2rem;font-weight:500;font-family:'Syne',sans-serif;">
+        Menos tiempo en el teléfono. Más tiempo con tus pacientes.
+      </p>
+    </div>
+    <div class="ia-visual reveal-scale">
+      <img src="images/ia-clinica.png" alt="ClinifyAgent — Agente inteligente para clínicas">
+    </div>
+  </div>
+</section>
+
+<!-- Features -->
+<section id="features">
+  <div class="section-header reveal">
+    <span class="section-label">Funcionalidades</span>
+    <h2>Una plataforma.<br>Todo lo que necesitas.</h2>
+    <p>Cada modulo fue disenado para clínicas y consultorios privados, con las particularidades del mercado local.</p>
+  </div>
+  <div class="features-grid">
+
+    <div class="feature-card reveal-scale" style="transition-delay:0s">
+      <div class="feature-icon">
+        <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      </div>
+      <h3>El turno se agenda solo, a cualquier hora</h3>
+      <p>El paciente manda un mensaje y el bot gestiona todo: especialidad, profesional, fecha y horario. Sin que nadie de tu equipo intervenga.</p>
+    </div>
+
+    <div class="feature-card reveal-scale" style="transition-delay:0.08s">
+      <div class="feature-icon">
+        <svg viewBox="0 0 24 24"><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4M12 16h4M8 11h.01M8 16h.01"/></svg>
+      </div>
+      <h3>El historial completo antes de que entre el paciente</h3>
+      <p>Tratamientos, evolución, fotos y documentos en un solo lugar. Accesible desde cualquier dispositivo, sin papeles ni carpetas.</p>
+    </div>
+
+    <div class="feature-card reveal-scale" style="transition-delay:0.16s">
+      <div class="feature-icon">
+        <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      </div>
+      <h3>Recordatorios que no fallan</h3>
+      <p>El sistema envía recordatorios automáticos por WhatsApp 24hs antes. Confirmación de asistencia y encuesta NPS post-consulta incluidas.</p>
+    </div>
+
+    <div class="feature-card reveal-scale" style="transition-delay:0.24s">
+      <div class="feature-icon">
+        <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      </div>
+      <h3>La agenda que se actualiza sola</h3>
+      <p>Gestión de turnos por profesional y horario. Recordatorios automáticos por WhatsApp 24hs antes. Menos ausencias, más ocupación.</p>
+    </div>
+
+    <div class="feature-card reveal-scale" style="transition-delay:0.32s">
+      <div class="feature-icon">
+        <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      </div>
+      <h3>Sabés cómo va tu clínica en tiempo real</h3>
+      <p>Ingresos, ocupación, pacientes más activos, NPS. Tomás decisiones con datos reales, no con sensaciones.</p>
+    </div>
+
+    <div class="feature-card reveal-scale" style="transition-delay:0.4s">
+      <div class="feature-icon">
+        <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      </div>
+      <h3>Una sola cuenta para todas tus sucursales</h3>
+      <p>Administradores, profesionales y recepcionistas con permisos diferenciados. Gestioná múltiples sedes desde un solo panel.</p>
+    </div>
+
+  </div>
+</section>
+
+<!-- Screenshots -->
+<section id="screenshots">
+  <div class="section-header centered reveal">
+    <span class="section-label">Plataforma</span>
+    <h2>Todo en una pantalla.</h2>
+    <p>Interfaces limpias e intuitivas para que tu equipo trabaje sin capacitación previa.</p>
+  </div>
+  <div class="screenshots-grid">
+
+    <div class="screenshot-item reveal-scale" style="transition-delay:0s">
+      <img src="images/feature-whatsapp.png" alt="Bot de WhatsApp para reserva de turnos">
+      <div class="screenshot-caption">
+        <h4>Bot de WhatsApp 24/7</h4>
+        <p>El paciente reserva su turno directamente desde WhatsApp, sin intervención humana, a cualquier hora del día.</p>
+      </div>
+    </div>
+
+    <div class="screenshot-item reveal-scale" style="transition-delay:0.1s">
+      <img src="images/feature-historial.png" alt="Historia clínica digital del paciente">
+      <div class="screenshot-caption">
+        <h4>Historia Clínica Digital</h4>
+        <p>Todo el historial del paciente — tratamientos, evolución y documentos — accesible desde cualquier dispositivo.</p>
+      </div>
+    </div>
+
+    <div class="screenshot-item reveal-scale" style="transition-delay:0.2s">
+      <img src="images/feature-agenda.png" alt="Agenda semanal de turnos por profesional">
+      <div class="screenshot-caption">
+        <h4>Agenda Inteligente</h4>
+        <p>Vista semanal por profesional con gestión en tiempo real, recordatorios automáticos y confirmaciones por WhatsApp.</p>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- How it works -->
+<section id="how">
+  <div class="section-header centered reveal" style="max-width:750px;margin-left:auto;margin-right:auto">
+    <span class="section-label">Como funciona</span>
+    <h2>Como funciona ClinifyAgent</h2>
+    <p>El paciente escribe. El bot gestiona. Vos solo revisas.</p>
+  </div>
+
+  <div class="bento-grid">
+    <!-- Card A: WhatsApp Chat (2/3 wide) -->
+    <div class="bento-card bento-card-a reveal-scale" id="chatCard">
+      <div class="chat-sim">
+        <div class="chat-sim-header">
+          <div class="chat-sim-avatar">C</div>
+          <div>
+            <strong>ClinifyAgent</strong>
+            <span class="chat-sim-status"><span class="dot-live"></span> Bot &middot; En linea</span>
+          </div>
+        </div>
+        <div class="chat-sim-body" id="chatBody">
+          <div class="chat-typing" id="chatTyping"><span></span><span></span><span></span></div>
+        </div>
+      </div>
+      <h3>El paciente escribe por WhatsApp</h3>
+      <p>Sin apps nuevas. El paciente usa el mismo WhatsApp que ya conoce y el bot interpreta lenguaje natural argentino.</p>
+    </div>
+
+    <!-- Card B: Agenda en vivo (1/3) -->
+    <div class="bento-card bento-card-b reveal-scale">
+      <div class="agenda-mini" id="agendaMini">
+        <div class="agenda-mini-header">
+          <span class="agenda-day">Martes 14 de mayo</span>
+          <span class="agenda-count" id="agendaCount">3 turnos</span>
+        </div>
+        <div class="agenda-rows" id="agendaRows">
+          <div class="agenda-row">
+            <span class="agenda-time">09:30</span>
+            <span class="agenda-bar" style="background:#6366f1"></span>
+            <div class="agenda-info">
+              <span class="agenda-patient">Maria Fernandez</span>
+              <span class="agenda-pro">Dr. Perez</span>
+            </div>
+            <span class="agenda-status done">Confirmado</span>
+          </div>
+          <div class="agenda-row">
+            <span class="agenda-time">11:00</span>
+            <span class="agenda-bar" style="background:#10b981"></span>
+            <div class="agenda-info">
+              <span class="agenda-patient">Juan Lopez</span>
+              <span class="agenda-pro">Lic. Gomez</span>
+            </div>
+            <span class="agenda-status done">Confirmado</span>
+          </div>
+          <div class="agenda-row">
+            <span class="agenda-time">16:30</span>
+            <span class="agenda-bar" style="background:#f59e0b"></span>
+            <div class="agenda-info">
+              <span class="agenda-patient">Ana Martinez</span>
+              <span class="agenda-pro">Dra. Sanchez</span>
+            </div>
+            <span class="agenda-status pending">Pendiente</span>
+          </div>
+        </div>
+      </div>
+      <h3>La agenda se actualiza sola</h3>
+      <p>El turno aparece en la agenda sin que nadie lo cargue. El profesional lo ve al instante desde su panel.</p>
+    </div>
+
+    <!-- Card C: Calendario (1/3) -->
+    <div class="bento-card bento-card-c reveal-scale">
+      <div class="mini-cal" id="miniCal">
+        <div class="mini-cal-header">
+          <span class="mini-cal-month">Mayo 2026</span>
+        </div>
+        <div class="mini-cal-dow">
+          <span>L</span><span>M</span><span class="active">M</span><span>J</span><span>V</span><span>S</span><span>D</span>
+        </div>
+        <div class="mini-cal-grid" id="miniCalGrid">
+          <span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span><span>10</span>
+          <span>11</span><span class="cal-day has-dot" data-day="12">12<span class="cal-dot" style="background:#6366f1"></span></span>
+          <span class="cal-day active-day" data-day="14">14<span class="cal-dot new-dot" id="newDot"></span></span>
+          <span>15</span><span>16</span><span>17</span>
+          <span>18</span><span>19</span><span class="cal-day has-dot" data-day="20">20<span class="cal-dot" style="background:#f59e0b"></span><span class="cal-dot" style="background:#10b981"></span></span>
+          <span>21</span><span>22</span><span>23</span><span>24</span>
+          <span>25</span><span>26</span><span>27</span><span>28</span><span>29</span><span>30</span><span>31</span>
+        </div>
+        <div class="mini-cal-legend">
+          <span>Turno confirmado en el dia 14</span>
+        </div>
+      </div>
+      <h3>El turno aparece en la agenda</h3>
+      <p>El profesional ve el turno agendado al instante en su calendario. Sin planillas, sin llamadas.</p>
+    </div>
+
+    <!-- Card D: Timeline (2/3 wide) -->
+    <div class="bento-card bento-card-d reveal-scale">
+      <div class="timeline">
+        <div class="tl-node" style="--i:0">
+          <div class="tl-icon">&#128197;</div>
+          <span>Turno agendado</span>
+        </div>
+        <div class="tl-line"></div>
+        <div class="tl-node" style="--i:1">
+          <div class="tl-icon tl-wa">&#128172;</div>
+          <span>Recordatorio 24hs</span>
+        </div>
+        <div class="tl-line"></div>
+        <div class="tl-node" style="--i:2">
+          <div class="tl-icon">&#9989;</div>
+          <span>Paciente confirmo</span>
+        </div>
+        <div class="tl-line"></div>
+        <div class="tl-node" style="--i:3">
+          <div class="tl-icon tl-star">&#11088;</div>
+          <span>Encuesta NPS</span>
+        </div>
+      </div>
+      <h3>El seguimiento tambien es automatico</h3>
+      <p>Recordatorios, confirmaciones y encuestas de satisfaccion. Sin que nadie los programe.</p>
+    </div>
+  </div>
+</section>
+
+<!-- Trust -->
+<section id="trust">
+  <div class="trust-grid">
+    <div class="trust-img reveal-scale">
+      <img src="images/profesional.png" alt="Profesional de la salud usando ClinifyAgent">
+    </div>
+    <div class="trust-content reveal" style="transition-delay:0.15s">
+      <span class="section-label">Para profesionales de la salud</span>
+      <h2>Pensado para tu día a día.</h2>
+      <p>ClinifyAgent se adapta a cualquier especialidad. Desde un consultorio unipersonal hasta una clínica con múltiples profesionales y sucursales — sin instalaciones ni capacitaciones largas.</p>
+      <p>Desde el primer día tu equipo gestiona turnos y pacientes desde un solo lugar, en cualquier dispositivo.</p>
+      <div class="trust-tags">
+        <span class="trust-tag">Medicina general</span>
+        <span class="trust-tag">Kinesiología</span>
+        <span class="trust-tag">Psicología</span>
+        <span class="trust-tag">Nutrición</span>
+        <span class="trust-tag">Odontología</span>
+        <span class="trust-tag">Fonoaudiología</span>
+        <span class="trust-tag">Y más</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- Testimonials -->
+<section id="testimonials">
+  <div class="section-header centered reveal" style="max-width:700px">
+    <span class="section-label">Testimonios</span>
+    <h2>Lo que dicen las clinicas que ya usan ClinifyAgent</h2>
+    <p>Mas de <span style="color:var(--amber-l);font-weight:600">+30 clinicas</span> confian en ClinifyAgent para gestionar sus turnos y pacientes.</p>
+  </div>
+  <div class="testimonials-grid">
+    <div class="testimonial-card reveal" style="transition-delay:0s">
+      <div class="testimonial-avatar" style="background:var(--amber)">MG</div>
+      <div class="testimonial-stars">★★★★★</div>
+      <p class="testimonial-text">"Antes perdiamos 3 o 4 turnos por semana por olvidos. Con ClinifyAgent el bot recuerda por nosotros y la ocupacion subio un 30% en el primer mes."</p>
+      <div class="testimonial-author">
+        <strong>Dr. Martin Gonzalez</strong>
+        <span>Odontologia · Buenos Aires</span>
+      </div>
+    </div>
+    <div class="testimonial-card reveal" style="transition-delay:0.1s">
+      <div class="testimonial-avatar" style="background:#f59e0b">LR</div>
+      <div class="testimonial-stars">★★★★★</div>
+      <p class="testimonial-text">"El bot atiende pacientes a cualquier hora, incluso los domingos. Mis pacientes ya no esperan al lunes para sacar turno y la agenda se llena mucho más rápido."</p>
+      <div class="testimonial-author">
+        <strong>Lic. Laura Rodriguez</strong>
+        <span>Kinesiologia · Cordoba</span>
+      </div>
+    </div>
+    <div class="testimonial-card reveal" style="transition-delay:0.2s">
+      <div class="testimonial-avatar" style="background:#d97706">CP</div>
+      <div class="testimonial-stars">★★★★★</div>
+      <p class="testimonial-text">"El bot atiende a las 2 de la manana cuando un paciente quiere sacar turno. Eso antes era imposible."</p>
+      <div class="testimonial-author">
+        <strong>Dr. Carlos Perez</strong>
+        <span>Medicina General · Rosario</span>
+      </div>
+    </div>
+  </div>
+</section>
+<!-- Pricing -->
+<section id="pricing">
+  <div class="section-header centered reveal">
+    <span class="section-label">Planes</span>
+    <h2>Precio claro, sin sorpresas.</h2>
+    <p>Sin contratos de permanencia. Cambia o cancela cuando quieras.</p>
+  </div>
+  <div class="pricing-grid">
+
+    <div class="plan-card featured reveal" style="transition-delay:0s">
+      <div class="plan-name">Starter</div>
+      <div class="plan-price"><span class="currency">$</span>49</div>
+      <div class="plan-period">USD / mes · 1 profesional</div>
+      <div class="plan-divider"></div>
+      <ul class="plan-features">
+        <li>1 profesional</li>
+        <li>1 sucursal</li>
+        <li>Hasta 500 pacientes</li>
+        <li>ClinifyAgent WhatsApp</li>
+        <li>Historial clinico y documentos</li>
+        <li>Recordatorios automaticos</li>
+        <li class="dim">Analytics RFM/NPS/Churn</li>
+        <li class="dim">Multi-sucursal</li>
+      </ul>
+      <div class="plan-support">Soporte: Centro de ayuda</div>
+      <div class="plan-onboarding">Onboarding: Self-service</div>
+      <a href="#contact" class="btn-plan fill">Empezar</a>
+    </div>
+
+    <div class="plan-card-wrapper reveal" style="transition-delay:0.1s">
+      <div class="plan-badge plan-badge-popular">Popular</div>
+      <div class="plan-card featured">
+        <div class="plan-name">Pro</div>
+        <div class="plan-price"><span class="currency">$</span>99</div>
+        <div class="plan-period">USD / mes · hasta 3 profesionales</div>
+        <div class="plan-divider"></div>
+        <ul class="plan-features">
+          <li>Hasta 3 profesionales</li>
+          <li>Hasta 2 sucursales</li>
+          <li>Pacientes ilimitados</li>
+          <li>ClinifyAgent WhatsApp</li>
+          <li>Historial clinico y documentos</li>
+          <li>Recordatorios automaticos</li>
+          <li>Analytics RFM/NPS/Churn</li>
+          <li>Multi-sucursal</li>
+        </ul>
+        <div class="plan-support">Soporte: Email en 24hs</div>
+        <div class="plan-onboarding">Onboarding: Asistido</div>
+        <a href="#contact" class="btn-plan fill cta-btn">Empezar</a>
+      </div>
+    </div>
+
+    <div class="plan-card featured reveal" style="transition-delay:0.2s">
+      <div class="plan-name">Enterprise</div>
+      <div class="plan-price"><span class="currency">$</span>179</div>
+      <div class="plan-period">USD / mes · profesionales ilimitados</div>
+      <div class="plan-divider"></div>
+      <ul class="plan-features">
+        <li>Profesionales ilimitados</li>
+        <li>Sucursales ilimitadas</li>
+        <li>Pacientes ilimitados</li>
+        <li>ClinifyAgent WhatsApp</li>
+        <li>Historial clinico y documentos</li>
+        <li>Recordatorios automaticos</li>
+        <li>Analytics RFM/NPS/Churn</li>
+        <li>Multi-sucursal</li>
+      </ul>
+      <div class="plan-support">Soporte: WhatsApp directo</div>
+      <div class="plan-onboarding">Onboarding: Personalizado</div>
+      <a href="#contact" class="btn-plan fill">Consultar</a>
+    </div>
+
+  </div>
+  <p style="text-align:center;font-size:0.82rem;color:var(--muted);margin-top:2rem;">14 dias gratis, sin tarjeta de credito. Cancela cuando quieras.</p>
+</section>
+
+
+<!-- FAQ -->
+<section id="faq">
+  <div class="section-header centered reveal">
+    <span class="section-label">FAQ</span>
+    <h2>Preguntas frecuentes</h2>
+  </div>
+  <div class="faq-list">
+    <div class="faq-item reveal">
+      <button class="faq-question" onclick="this.parentElement.classList.toggle('open')">
+        <span>¿Funciona con cualquier especialidad médica?</span>
+        <svg class="faq-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="faq-answer"><p>Sí. ClinifyAgent está diseñado para cualquier especialidad: odontología, kinesiología, psicología, nutrición, medicina general, fonoaudiología y más. El sistema se adapta a los tiempos de consulta y nomenclaturas de cada especialidad.</p></div>
+    </div>
+    <div class="faq-item reveal">
+      <button class="faq-question" onclick="this.parentElement.classList.toggle('open')">
+        <span>¿Necesito instalar algo?</span>
+        <svg class="faq-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="faq-answer"><p>No. ClinifyAgent es 100% web. Funciona desde cualquier navegador en computadora, tablet o celular. Tu equipo accede desde el día uno sin instalaciones ni capacitaciones largas.</p></div>
+    </div>
+    <div class="faq-item reveal">
+      <button class="faq-question" onclick="this.parentElement.classList.toggle('open')">
+        <span>¿Qué pasa si el bot no entiende al paciente?</span>
+        <svg class="faq-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="faq-answer"><p>El bot está entrenado para el lenguaje natural argentino. En los casos donde no puede resolver la consulta, deriva automáticamente a un miembro de tu equipo con todo el contexto de la conversación.</p></div>
+    </div>
+    <div class="faq-item reveal">
+      <button class="faq-question" onclick="this.parentElement.classList.toggle('open')">
+        <span>¿Hay contrato de permanencia?</span>
+        <svg class="faq-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="faq-answer"><p>No. Podés cambiar de plan o cancelar cuando quieras. Sin penalidades ni letra chica.</p></div>
+    </div>
+    <div class="faq-item reveal">
+      <button class="faq-question" onclick="this.parentElement.classList.toggle('open')">
+        <span>¿Puedo personalizar los mensajes del bot?</span>
+        <svg class="faq-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="faq-answer"><p>Sí. Podés configurar el tono, los mensajes de bienvenida, las preguntas que hace el bot y el nombre con el que se presenta. Todo desde el panel de configuración sin necesidad de programar nada.</p></div>
+    </div>
+    <div class="faq-item reveal">
+      <button class="faq-question" onclick="this.parentElement.classList.toggle('open')">
+        <span>¿Cuánto tiempo lleva configurar el sistema?</span>
+        <svg class="faq-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="faq-answer"><p>El onboarding completo (clínica, profesionales, horarios y bot) toma menos de una hora. Te acompañamos en el proceso y el bot ya puede empezar a atender pacientes el mismo día.</p></div>
+    </div>
+  </div>
+</section>
+
+
+<!-- Contact -->
+<section id="contact">
+  <div class="contact-grid">
+    <div class="contact-info reveal">
+      <span class="section-label">Contacto</span>
+      <h2 style="margin-bottom:1.5rem">Empeza hoy mismo.</h2>
+      <p>Completá el formulario y te contactamos en menos de 24hs para mostrarte cómo ClinifyAgent puede transformar la gestión de tu clínica o consultorio.</p>
+
+      <div class="creator-card">
+        <div class="creator-avatar">JS</div>
+        <div>
+          <div class="creator-name">Jonatan Scarone</div>
+          <div class="creator-role">Creador · Desarrollador</div>
+          <a href="mailto:scaronejonatan@gmail.com" class="creator-email">scaronejonatan@gmail.com</a>
+        </div>
+      </div>
+
+      <div style="padding:1.5rem; background:var(--surface); border:1px solid var(--border); border-radius:12px;">
+        <p style="font-size:0.85rem; color:var(--muted2); margin-bottom:0.75rem; font-weight:500;">Respondemos en menos de 24 horas</p>
+        <div style="display:flex; flex-direction:column; gap:0.6rem;">
+          <div style="display:flex; gap:10px; align-items:center; font-size:0.85rem; color:var(--muted);">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+            scaronejonatan@gmail.com
+          </div>
+          <div style="display:flex; gap:10px; align-items:center; font-size:0.85rem; color:var(--muted);">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            Argentina
+          </div>
+        </div>
+      </div>
+      <div class="contact-reception">
+        <img src="images/recepcion.png" alt="Clínica moderna usando ClinifyAgent">
+      </div>
+    </div>
+
+    <div class="reveal" style="transition-delay:0.15s">
+
+      <a href="https://wa.me/5491168062699?text=Hola,%20quiero%20saber%20m%C3%A1s%20sobre%20ClinifyAgent" class="btn-whatsapp" target="_blank" rel="noopener">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="#fff"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+        Hablar por WhatsApp ahora
+      </a>
+
+      <div class="form-separator">
+        <span>o completá el formulario</span>
+      </div>
+      <form class="contact-form" onsubmit="handleSubmit(event)">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+          <div class="form-group">
+            <label>Nombre</label>
+            <input name="nombre" type="text" placeholder="Tu nombre" required>
+          </div>
+          <div class="form-group">
+            <label>Clinica</label>
+            <input name="clinica" type="text" placeholder="Nombre de tu clinica">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Email</label>
+          <input name="email" type="email" placeholder="tu@email.com" required>
+        </div>
+        <div class="form-group">
+          <label>Telefono (WhatsApp)</label>
+          <input name="telefono" type="tel" placeholder="+54 9 11 ...">
+        </div>
+        <div class="form-group">
+          <label>Cantidad de profesionales</label>
+          <select name="profesionales" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:0.8rem 1rem;color:var(--white);font-family:DM Sans,sans-serif;font-size:0.9rem;outline:none;appearance:none;cursor:pointer">
+            <option value="">Seleccionar</option>
+            <option value="1">1</option>
+            <option value="2-3">2 a 3</option>
+            <option value="+3">Más de 3</option>
+          </select>
+        </div>
+        <button type="submit" class="btn-submit cta-btn">Quiero mi demo gratuita</button>
+      </form>
+    </div>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer>
+  <div class="footer-grid">
+    <div class="footer-col">
+      <div class="footer-logo" style="margin-bottom:0.5rem">Clinify<span>Agent</span></div>
+      <p style="font-size:0.78rem;color:var(--muted);margin-bottom:1rem">© <span id="year"></span> Clinify · Desarrollado por Jonatan Scarone · Argentina</p>
+    </div>
+    <div class="footer-col">
+      <h4 class="footer-heading">Producto</h4>
+      <ul class="footer-links">
+        <li><a href="#features">Funcionalidades</a></li>
+        <li><a href="#pricing">Planes y precios</a></li>
+        <li><a href="#how">Cómo funciona</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4 class="footer-heading">Legal</h4>
+      <ul class="footer-links">
+        <li><a href="terminos.html">Términos y condiciones</a></li>
+        <li><a href="privacidad.html">Política de privacidad</a></li>
+        <li><a href="#">Política de cookies</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4 class="footer-heading">Contacto</h4>
+      <ul class="footer-links">
+        <li><a href="mailto:scaronejonatan@gmail.com">scaronejonatan@gmail.com</a></li>
+        <li><a href="https://wa.me/5491168062699" target="_blank" rel="noopener" style="color:var(--amber-l)">WhatsApp</a></li>
+        <li style="font-size:0.75rem;color:var(--muted)">Respondemos en menos de 24hs</li>
+      </ul>
+    </div>
+  </div>
+</footer>
+
+<script>
+// ── Año footer ──
+document.getElementById('year').textContent = new Date().getFullYear();
+
+// ── Cursor ──
+const cursor = document.getElementById('cursor');
+if (cursor && window.innerWidth > 640) {
+  let mx = 0, my = 0, cx = 0, cy = 0;
+  document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+  (function loop() {
+    cx += (mx - cx) * 0.18;
+    cy += (my - cy) * 0.18;
+    cursor.style.left = cx + 'px';
+    cursor.style.top  = cy + 'px';
+    requestAnimationFrame(loop);
+  })();
+  document.querySelectorAll('a, button, input, textarea, .feature-card, .plan-card').forEach(el => {
+    el.addEventListener('mouseenter', () => cursor.classList.add('hover'));
+    el.addEventListener('mouseleave', () => cursor.classList.remove('hover'));
+  });
+}
+
+// ── Particles ──
+(function() {
+  const canvas = document.getElementById('particles-canvas');
+  const ctx    = canvas.getContext('2d');
+  let W, H, particles;
+  const COUNT   = 70;
+  const MAX_DIST = 140;
+
+  function resize() {
+    const hero = canvas.parentElement;
+    W = canvas.width  = hero.offsetWidth;
+    H = canvas.height = hero.offsetHeight;
+  }
+
+  function mkParticle() {
+    return {
+      x:  Math.random() * W,
+      y:  Math.random() * H,
+      vx: (Math.random() - 0.5) * 0.4,
+      vy: (Math.random() - 0.5) * 0.4,
+      r:  Math.random() * 1.8 + 0.6,
+    };
+  }
+
+  function init() {
+    resize();
+    particles = Array.from({ length: COUNT }, mkParticle);
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+
+    for (let i = 0; i < particles.length; i++) {
+      const a = particles[i];
+      // move
+      a.x += a.vx; a.y += a.vy;
+      if (a.x < 0 || a.x > W) a.vx *= -1;
+      if (a.y < 0 || a.y > H) a.vy *= -1;
+
+      // dot
+      ctx.beginPath();
+      ctx.arc(a.x, a.y, a.r, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(245,158,11,0.7)';
+      ctx.fill();
+
+      // lines
+      for (let j = i + 1; j < particles.length; j++) {
+        const b = particles[j];
+        const dx = a.x - b.x, dy = a.y - b.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < MAX_DIST) {
+          const alpha = (1 - dist / MAX_DIST) * 0.25;
+          ctx.beginPath();
+          ctx.moveTo(a.x, a.y);
+          ctx.lineTo(b.x, b.y);
+          ctx.strokeStyle = `rgba(217,119,6,${alpha})`;
+          ctx.lineWidth = 0.8;
+          ctx.stroke();
+        }
+      }
+    }
+    requestAnimationFrame(draw);
+  }
+
+  window.addEventListener('resize', () => { resize(); });
+  init();
+  draw();
+})();
+
+// ── Nav scroll ──
+const nav = document.getElementById('nav');
+window.addEventListener('scroll', () => {
+}, { passive: true });
+
+// ── Hamburger ──
+const hb = document.getElementById('hamburger');
+const mm = document.getElementById('mobileMenu');
+hb.addEventListener('click', () => {
+  mm.classList.toggle('open');
+  const spans = hb.querySelectorAll('span');
+  if (mm.classList.contains('open')) {
+    spans[0].style.transform = 'translateY(7px) rotate(45deg)';
+    spans[1].style.opacity   = '0';
+    spans[2].style.transform = 'translateY(-7px) rotate(-45deg)';
+  } else {
+    spans.forEach(s => { s.style.transform = ''; s.style.opacity = ''; });
+  }
+});
+function closeMobile() {
+  mm.classList.remove('open');
+  hb.querySelectorAll('span').forEach(s => { s.style.transform = ''; s.style.opacity = ''; });
+}
+
+// ── Video Modal ──
+function openVideoModal() {
+  var modal = document.getElementById('videoModal');
+  var iframe = modal.querySelector('iframe');
+  if (!iframe.src || iframe.src === window.location.href) {
+    iframe.src = iframe.getAttribute('data-src');
+  }
+  modal.classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeVideoModal(e, modalId) {
+  var modal = document.getElementById(modalId);
+  if (e.target === modal || (e.type === 'keydown' && e.key === 'Escape')) {
+    modal.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+}
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    var modal = document.getElementById('videoModal');
+    if (modal.classList.contains('open')) {
+      modal.classList.remove('open');
+      document.body.style.overflow = '';
+    }
+  }
+});
+
+// ── Reveal on scroll ──
+if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+  const revealObs = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.classList.add('visible');
+        revealObs.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.12 });
+  document.querySelectorAll('.reveal, .reveal-scale').forEach(el => revealObs.observe(el));
+
+  // ── Counter animation ──
+  function animateCounter(el) {
+    const target = +el.dataset.target;
+    if (target === 0) { el.textContent = '0'; return; }
+    const duration = 1800;
+    const start = performance.now();
+    const update = (now) => {
+      const p = Math.min((now - start) / duration, 1);
+      const eased = 1 - Math.pow(1 - p, 3);
+      el.textContent = Math.floor(eased * target).toLocaleString('es');
+      if (p < 1) requestAnimationFrame(update);
+      else el.textContent = target.toLocaleString('es');
+    };
+    requestAnimationFrame(update);
+  }
+  const counterObs = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        animateCounter(e.target);
+        counterObs.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.3 });
+  document.querySelectorAll('.counter').forEach(el => counterObs.observe(el));
+
+  // ── Magnetic CTA ──
+  document.querySelectorAll('.cta-btn').forEach(btn => {
+    btn.addEventListener('mousemove', e => {
+      const r = btn.getBoundingClientRect();
+      const x = ((e.clientX - r.left) / r.width  - 0.5) * 10;
+      const y = ((e.clientY - r.top)  / r.height - 0.5) * 10;
+      btn.style.transform = `translate(${x}px, ${y}px)`;
+    });
+    btn.addEventListener('mouseleave', () => btn.style.transform = '');
+  });
+}
+
+// ── Form submit ──
+async function handleSubmit(e) {
+  e.preventDefault();
+  const form = e.target;
+  const btn  = form.querySelector('.btn-submit');
+  const nombre  = form.nombre.value.trim();
+  const clinica = form.clinica.value.trim();
+  const email   = form.email.value.trim();
+  const telefono = form.telefono.value.trim();
+  const profesionales = form.profesionales ? form.profesionales.value : '';
+
+  btn.textContent = 'Enviando...';
+  btn.disabled = true;
+
+  // 1. Email via Formsubmit (AJAX, no redirect)
+  try {
+    await fetch('https://formsubmit.co/ajax/scaronejonatan@gmail.com', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify({
+        Nombre: nombre,
+        Clinica: clinica || '—',
+        Email: email,
+        Telefono: telefono || '—',
+        Profesionales: profesionales || '—',
+        _subject: `Nuevo contacto ClinifyAgent — ${nombre}`,
+      }),
+    });
+  } catch (_) { /* continuar igual */ }
+
+  // 2. Abrir WhatsApp con los datos
+  const texto = `Hola Jonatan! Me contacto desde la landing de ClinifyAgent 👇\n\n*Nombre:* ${nombre}\n*Clínica:* ${clinica || '—'}\n*Email:* ${email}\n*Teléfono:* ${telefono || '—'}\n*Profesionales:* ${profesionales || '—'}`;
+  window.open('https://wa.me/5491168062699?text=' + encodeURIComponent(texto), '_blank');
+
+  btn.textContent = '¡Enviado! Te contactamos pronto.';
+  btn.style.background = '#16a34a';
+}
+
+// ── Bento chat animation ──
+(function() {
+  var chatBody = document.getElementById('chatBody');
+  var chatTyping = document.getElementById('chatTyping');
+  if (!chatBody || !chatTyping) return;
+
+  var script = [
+    { type: 'in', text: 'hola, quiero sacar un turno para el martes', typewriter: true },
+    { type: 'typing', duration: 1500 },
+    { type: 'out', text: 'Hola! Te consigo turno ahora mismo. Que especialidad necesitas?' },
+    { type: 'in', text: 'kinesiologia', typewriter: true },
+    { type: 'typing', duration: 1400 },
+    { type: 'out', text: 'Tengo disponible el martes 14hs con la Lic. Rodriguez. Te queda bien?' },
+    { type: 'in', text: 'si perfecto', typewriter: true },
+    { type: 'typing', duration: 1200 },
+    { type: 'out', text: '&#x2705; Turno confirmado. Te recuerdo 24hs antes.' },
+    { type: 'agenda', delay: 800 },
+  ];
+
+  var isVisible = true;
+  var stepIdx = 0;
+  var timeout = null;
+  var bubbles = [];
+
+  function clearAll() {
+    if (timeout) clearTimeout(timeout);
+    bubbles.forEach(function(b) { if (b.parentNode) b.parentNode.removeChild(b); });
+    bubbles = [];
+    chatTyping.style.display = 'none';
+    stepIdx = 0;
+    resetAgenda();
+    resetCalendarDot();
+  }
+
+  function addBubble(type, text) {
+    var div = document.createElement('div');
+    div.className = 'chat-bubble ' + (type === 'in' ? 'in' : 'out');
+    div.innerHTML = text;
+    chatBody.insertBefore(div, chatTyping);
+    bubbles.push(div);
+    requestAnimationFrame(function() { div.classList.add('show'); });
+    return div;
+  }
+
+  function typewriterBubble(type, text, cb) {
+    var div = document.createElement('div');
+    div.className = 'chat-bubble ' + (type === 'in' ? 'in' : 'out');
+    div.innerHTML = '';
+    chatBody.insertBefore(div, chatTyping);
+    bubbles.push(div);
+    div.classList.add('show');
+    var i = 0;
+    var iv = setInterval(function() {
+      i++;
+      div.textContent = text.substring(0, i);
+      if (i >= text.length) { clearInterval(iv); if (cb) cb(); }
+    }, 40);
+  }
+
+  function runStep() {
+    if (!isVisible) return;
+    if (stepIdx >= script.length) {
+      timeout = setTimeout(function() {
+        clearAll();
+        if (isVisible) runStep();
+      }, 2000);
+      return;
+    }
+    var step = script[stepIdx];
+    if (step.type === 'typing') {
+      chatTyping.style.display = 'flex';
+      timeout = setTimeout(function() {
+        chatTyping.style.display = 'none';
+        stepIdx++;
+        runStep();
+      }, step.duration);
+    } else if (step.typewriter) {
+      chatTyping.style.display = 'none';
+      typewriterBubble(step.type, step.text, function() {
+        stepIdx++;
+        timeout = setTimeout(runStep, 400);
+      });
+    } else if (step.type === 'agenda') {
+      chatTyping.style.display = 'none';
+      addAgendaAppointment();
+      stepIdx++;
+      timeout = setTimeout(runStep, step.delay || 800);
+    } else {
+      chatTyping.style.display = 'none';
+      addBubble(step.type, step.text);
+      stepIdx++;
+      timeout = setTimeout(runStep, 800);
+    }
+  }
+
+  // ── Agenda sync ──
+  function resetAgenda() {
+    var rows = document.getElementById('agendaRows');
+    if (!rows) return;
+    var newRows = rows.querySelectorAll('.agenda-row.dynamic');
+    newRows.forEach(function(r) { r.parentNode.removeChild(r); });
+    var count = document.getElementById('agendaCount');
+    if (count) count.textContent = '3 turnos';
+  }
+  function addAgendaAppointment() {
+    var rows = document.getElementById('agendaRows');
+    var count = document.getElementById('agendaCount');
+    if (!rows || !count) return;
+    var existing = rows.querySelectorAll('.agenda-row.dynamic');
+    if (existing.length > 0) return;
+    var div = document.createElement('div');
+    div.className = 'agenda-row dynamic new';
+    div.innerHTML = '<span class="agenda-time">14:00</span><span class="agenda-bar" style="background:#10b981"></span><div class="agenda-info"><span class="agenda-patient">Tu Consulta</span><span class="agenda-pro">Lic. Rodriguez</span></div><span class="agenda-status done">Confirmado</span>';
+    rows.appendChild(div);
+    count.textContent = '4 turnos';
+    setTimeout(function() { div.classList.remove('new'); }, 2000);
+
+    // Stamp calendar dot
+    var dot = document.getElementById('newDot');
+    var legend = document.querySelector('.mini-cal-legend');
+    if (dot) {
+      dot.classList.remove('stamped');
+      void dot.offsetWidth;
+      setTimeout(function() { dot.classList.add('stamped'); }, 300);
+    }
+    if (legend) {
+      setTimeout(function() {
+        legend.classList.add('show');
+        legend.style.animation = 'legendFlash 2s ease-out';
+        setTimeout(function() { legend.style.animation = ''; }, 2000);
+      }, 500);
+    }
+  }
+
+  function resetCalendarDot() {
+    var dot = document.getElementById('newDot');
+    var legend = document.querySelector('.mini-cal-legend');
+    if (dot) dot.classList.remove('stamped');
+    if (legend) { legend.classList.remove('show'); legend.style.animation = ''; }
+  }
+
+  var obs = new IntersectionObserver(function(entries) {
+    entries.forEach(function(e) {
+      if (e.isIntersecting && !isVisible) { isVisible = true; runStep(); }
+      else if (!e.isIntersecting && isVisible) { isVisible = false; clearAll(); }
+    });
+  }, { threshold: 0.3 });
+  obs.observe(document.getElementById('chatCard'));
+  isVisible = true;
+  runStep();
+})();
+
+</script>
+<!-- Video Modal -->
+<div class="video-modal" id="videoModal" onclick="closeVideoModal(event, 'videoModal')">
+  <div class="video-modal-container" onclick="event.stopPropagation()">
+    <button class="video-modal-close" onclick="document.getElementById('videoModal').classList.remove('open')">&times;</button>
+    <iframe
+      class="video-modal-iframe"
+      src=""
+      data-src="https://www.loom.com/embed/VIDEO_ID_AQUI"
+      allowfullscreen
+      loading="lazy"
+      title="Demo de ClinifyAgent en acción">
+    </iframe>
+  </div>
+</div>
+</body>
+</html>
