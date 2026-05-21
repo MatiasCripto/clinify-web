@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Política de Privacidad — ClinifyAgent</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --black:    #080808;
+    --black2:   #0f0f0f;
+    --surface:  #141414;
+    --border:   #1e1e1e;
+    --amber:    #d97706;
+    --amber-l:  #f59e0b;
+    --white:    #f5f5f5;
+    --muted:    #6b6b6b;
+    --muted2:   #9a9a9a;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--black);
+    color: var(--white);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 16px;
+    line-height: 1.7;
+    overflow-x: hidden;
+  }
+  ::selection { background: var(--amber); color: var(--black); }
+
+  nav {
+    position: sticky; top: 0; z-index: 100;
+    padding: 0 5%;
+    display: flex; align-items: center; justify-content: space-between;
+    height: 72px;
+    background: rgba(8,8,8,0.92);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--border);
+  }
+  .nav-logo {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 1.25rem;
+    letter-spacing: -0.02em;
+    color: var(--white);
+    text-decoration: none;
+  }
+  .nav-logo span { color: var(--amber-l); }
+  .nav-back {
+    color: var(--muted2); font-size: 0.875rem;
+    text-decoration: none; letter-spacing: 0.02em;
+    transition: color 0.2s;
+  }
+  .nav-back:hover { color: var(--white); }
+
+  main {
+    max-width: 760px; margin: 0 auto;
+    padding: 5rem 5% 6rem;
+  }
+  h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: 2.4rem;
+    font-weight: 800;
+    line-height: 1.2;
+    letter-spacing: -0.03em;
+    margin-bottom: 0.5rem;
+  }
+  .updated {
+    font-size: 0.85rem; color: var(--muted);
+    margin-bottom: 3rem;
+  }
+  h2 {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 1.15rem;
+    color: var(--amber-l);
+    margin: 2.5rem 0 0.75rem;
+    letter-spacing: -0.01em;
+  }
+  h2:first-of-type { margin-top: 0; }
+  p, li {
+    font-size: 0.95rem;
+    color: var(--muted2);
+    line-height: 1.8;
+    margin-bottom: 0.75rem;
+  }
+  ul {
+    padding-left: 1.5rem;
+    margin-bottom: 1rem;
+  }
+  ul li {
+    margin-bottom: 0.4rem;
+    padding-left: 0.25rem;
+  }
+  strong {
+    color: var(--white);
+    font-weight: 600;
+  }
+
+  footer {
+    padding: 3rem 5%;
+    border-top: 1px solid var(--border);
+    text-align: center;
+  }
+  footer p {
+    font-size: 0.8rem; color: var(--muted);
+  }
+  footer a {
+    color: var(--amber-l); text-decoration: none;
+  }
+  footer a:hover { text-decoration: underline; }
+
+  @media (max-width: 640px) {
+    h1 { font-size: 1.8rem; }
+    h2 { font-size: 1.05rem; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="clinify-agent.html" class="nav-logo">Clinify<span>Agent</span></a>
+  <a href="clinify-agent.html" class="nav-back">Volver al inicio</a>
+</nav>
+
+<main>
+  <h1>Política de Privacidad</h1>
+  <p class="updated">Última actualización: Mayo 2026</p>
+
+  <h2>1. Responsable del tratamiento</h2>
+  <p>ClinifyAgent ("nosotros") es responsable del tratamiento de los datos personales recopilados a través de la plataforma, conforme a la Ley 25.326 de Protección de Datos Personales de la República Argentina.</p>
+
+  <h2>2. Datos que recopilamos</h2>
+  <p><strong>Datos de la organización y usuarios:</strong></p>
+  <ul>
+    <li>Nombre, email y teléfono del titular de la cuenta</li>
+    <li>Datos de facturación (nombre, CUIT/CUIL)</li>
+    <li>Información de uso de la plataforma (logs, accesos)</li>
+  </ul>
+  <p><strong>Datos de pacientes (cargados por la organización):</strong></p>
+  <ul>
+    <li>Nombre, DNI, teléfono, email</li>
+    <li>Historial de turnos y sesiones clínicas</li>
+    <li>Documentos y archivos clínicos subidos por el equipo</li>
+    <li>Conversaciones con el agente de IA vía WhatsApp</li>
+  </ul>
+
+  <h2>3. Finalidad del tratamiento</h2>
+  <p>Utilizamos los datos para:</p>
+  <ul>
+    <li>Proveer y mejorar el Servicio</li>
+    <li>Gestionar turnos, pacientes y comunicaciones</li>
+    <li>Operar el agente de IA para atención por WhatsApp</li>
+    <li>Enviar notificaciones y recordatorios de turnos</li>
+    <li>Cumplir obligaciones legales</li>
+  </ul>
+
+  <h2>4. Base legal</h2>
+  <p>El tratamiento se basa en:</p>
+  <ul>
+    <li>La ejecución del contrato de suscripción con la organización</li>
+    <li>El consentimiento del titular donde corresponda</li>
+    <li>El cumplimiento de obligaciones legales aplicables</li>
+  </ul>
+
+  <h2>5. Almacenamiento y seguridad</h2>
+  <ul>
+    <li>Los datos se almacenan en servidores seguros con cifrado en tránsito (TLS) y en reposo.</li>
+    <li>Aplicamos control de acceso por roles (superadmin, owner, admin, staff, viewer).</li>
+    <li>Registramos auditoría de acciones sensibles como carga y eliminación de documentos clínicos.</li>
+    <li>Realizamos backups periódicos para prevenir pérdida de información.</li>
+  </ul>
+
+  <h2>6. Compartición de datos</h2>
+  <p>No vendemos ni cedemos datos personales a terceros. Podemos compartir datos con:</p>
+  <ul>
+    <li><strong>Proveedores de infraestructura</strong> (hosting, base de datos) bajo acuerdos de confidencialidad</li>
+    <li><strong>Proveedores de IA</strong> para el funcionamiento del agente, sin identificación personal del paciente cuando sea posible</li>
+    <li><strong>Autoridades competentes</strong> cuando la ley lo exija</li>
+  </ul>
+
+  <h2>7. Datos de menores</h2>
+  <p>ClinifyAgent no está dirigido a menores de 18 años. Si se cargan datos de pacientes menores, la organización es responsable de contar con el consentimiento del tutor legal.</p>
+
+  <h2>8. Retención de datos</h2>
+  <ul>
+    <li>Los datos se conservan mientras la suscripción esté activa.</li>
+    <li>Ante cancelación, los datos se mantienen disponibles 30 días para exportación y luego se eliminan de forma segura.</li>
+    <li>Los logs de auditoría se conservan por 12 meses.</li>
+  </ul>
+
+  <h2>9. Derechos del titular</h2>
+  <p>Conforme a la Ley 25.326, el titular de los datos tiene derecho a:</p>
+  <ul>
+    <li><strong>Acceso:</strong> solicitar qué datos tenemos sobre usted</li>
+    <li><strong>Rectificación:</strong> corregir datos inexactos</li>
+    <li><strong>Cancelación:</strong> solicitar la eliminación de sus datos</li>
+    <li><strong>Oposición:</strong> oponerse al tratamiento en ciertos casos</li>
+  </ul>
+  <p>Para ejercer estos derechos: <a href="mailto:scaronejonatan@gmail.com">scaronejonatan@gmail.com</a></p>
+
+  <h2>10. Cookies</h2>
+  <p>Utilizamos cookies esenciales para el funcionamiento de la plataforma (sesión, autenticación). No utilizamos cookies de seguimiento publicitario.</p>
+
+  <h2>11. Cambios en esta política</h2>
+  <p>Notificaremos cambios significativos por email con 15 días de anticipación.</p>
+
+  <h2>12. Contacto</h2>
+  <p>Para consultas sobre privacidad y datos personales: <a href="mailto:scaronejonatan@gmail.com">scaronejonatan@gmail.com</a></p>
+</main>
+
+<footer>
+  <p>&copy; 2026 ClinifyAgent &middot; Desarrollado por Jonatan Scarone &middot; Argentina</p>
+  <p style="margin-top:0.5rem"><a href="terminos.html">Términos y Condiciones</a></p>
+</footer>
+
+</body>
+</html>
